@@ -1,85 +1,79 @@
 /**
- * night.js
- * ────────
- * Handles the night phase logic: sequential wake-ups for Mafia → Doctor → Cheikh,
- * collecting actions via Socket.io, and resolving the night.
+ * night.js — Night phase with timers and auto-skip.
  */
-
 const gm = require('../gameManager');
 
-/**
- * Start the night phase for a room.
- * Sets up the sequential wake-up flow.
- */
 function startNight(io, room) {
   room.phase = 'night';
   room.round++;
   room.nightStep = 'mafia';
   room.nightActions = {};
 
-  // Broadcast to all players: night has begun
   io.to(room.code).emit('phase-change', {
-    phase: 'night',
-    round: room.round,
+    phase: 'night', round: room.round,
     message: 'Night falls over the town… Everyone close your eyes.'
   });
 
-  // After a short delay, wake up the Mafia
   setTimeout(() => wakeUpRole(io, room, 'mafia'), 2000);
 }
 
-/**
- * Wake up a specific role group.
- * Only those players see the action UI.
- */
 function wakeUpRole(io, room, step) {
+  if (room.phase !== 'night') return;
   room.nightStep = step;
+
+  // Skip Cheikh if disabled
+  if (step === 'cheikh' && !room.settings.enableCheikh) {
+    handleNightAction(io, room, step, null);
+    return;
+  }
 
   const alivePlayers = gm.getAlivePlayers(room);
 
-  // Notify host/all about which role is awake (without revealing who)
   io.to(room.code).emit('night-step', {
-    step,
-    message: getNightStepMessage(step)
+    step, message: getNightStepMessage(step)
   });
 
-  // Send action UI only to the relevant role's players
   const roleName = step.charAt(0).toUpperCase() + step.slice(1);
   const rolePlayers = gm.getPlayersByRole(room, roleName);
 
-  // Build target list (exclude self for some roles, exclude dead)
   const targets = alivePlayers.filter(p => {
-    // Mafia can't target fellow Mafia
     if (step === 'mafia') {
-      const targetPlayer = room.players.get(p.id);
-      return targetPlayer && targetPlayer.role !== 'Mafia';
+      const tp = room.players.get(p.id);
+      return tp && tp.role !== 'Mafia';
     }
     return true;
   });
 
   rolePlayers.forEach(rp => {
     io.to(rp.id).emit('night-action-prompt', {
-      step,
-      role: roleName,
+      step, role: roleName,
       targets: targets.map(t => ({ id: t.id, name: t.name })),
-      message: getActionPrompt(step)
+      message: getActionPrompt(step),
+      timeLimit: room.settings.nightActionTime
     });
   });
 
-  // If no alive players with this role, auto-skip
   if (rolePlayers.length === 0) {
     handleNightAction(io, room, step, null);
     return;
   }
+
+  // Auto-skip timer
+  const timerSec = room.settings.nightActionTime;
+  io.to(room.code).emit('timer-start', { phase: 'night-action', seconds: timerSec });
+
+  gm.setRoomTimer(room, 'nightAction', () => {
+    if (room.phase === 'night' && room.nightStep === step) {
+      handleNightAction(io, room, step, null);
+    }
+  }, timerSec * 1000);
 }
 
-/**
- * Handle a submitted night action from a player.
- */
 function handleNightAction(io, room, step, targetId) {
+  gm.clearRoomTimer(room, 'nightAction');
+
   if (step === 'mafia') {
     gm.setNightAction(room, 'mafiaTarget', targetId);
-    // Confirm to Mafia players
     const mafiaPlayers = gm.getPlayersByRole(room, 'Mafia');
     const targetName = targetId ? room.players.get(targetId)?.name : 'no one';
     mafiaPlayers.forEach(mp => {
@@ -87,12 +81,10 @@ function handleNightAction(io, room, step, targetId) {
         message: `Target selected: ${targetName}. Close your eyes.`
       });
     });
-    // Move to Doctor
     setTimeout(() => wakeUpRole(io, room, 'doctor'), 2000);
 
   } else if (step === 'doctor') {
     gm.setNightAction(room, 'doctorTarget', targetId);
-    // Confirm to Doctor
     const doctors = gm.getPlayersByRole(room, 'Doctor');
     const targetName = targetId ? room.players.get(targetId)?.name : 'no one';
     doctors.forEach(d => {
@@ -100,12 +92,10 @@ function handleNightAction(io, room, step, targetId) {
         message: `You chose to protect ${targetName}. Close your eyes.`
       });
     });
-    // Move to Cheikh
     setTimeout(() => wakeUpRole(io, room, 'cheikh'), 2000);
 
   } else if (step === 'cheikh') {
     gm.setNightAction(room, 'cheikhTarget', targetId);
-    // Send investigation result privately
     const cheikhs = gm.getPlayersByRole(room, 'Cheikh');
     if (targetId) {
       const targetPlayer = room.players.get(targetId);
@@ -113,8 +103,7 @@ function handleNightAction(io, room, step, targetId) {
       const targetName = targetPlayer?.name || 'Unknown';
       cheikhs.forEach(c => {
         io.to(c.id).emit('cheikh-result', {
-          targetName,
-          result: isMafia ? 'Mafia' : 'Not Mafia',
+          targetName, result: isMafia ? 'Mafia' : 'Not Mafia',
           message: `${targetName} is ${isMafia ? '🔴 Mafia' : '🟢 Not Mafia'}.`
         });
       });
@@ -125,19 +114,14 @@ function handleNightAction(io, room, step, targetId) {
         });
       });
     }
-    // Resolve the night
     setTimeout(() => resolveNightPhase(io, room), 2500);
   }
 }
 
-/**
- * Resolve the night: compare Mafia target vs Doctor save, broadcast results.
- */
 function resolveNightPhase(io, room) {
   room.nightStep = 'resolve';
   const result = gm.resolveNight(room);
 
-  // Broadcast night result to all players
   if (result.saved) {
     io.to(room.code).emit('night-result', {
       saved: true,
@@ -147,13 +131,19 @@ function resolveNightPhase(io, room) {
   } else if (result.victim) {
     io.to(room.code).emit('night-result', {
       saved: false,
-      message: `☀️ Dawn breaks… ${result.victimName} was found dead. They were a ${result.victimRole}.`,
-      victim: {
-        id: result.victim,
-        name: result.victimName,
-        role: result.victimRole
-      }
+      message: `☀️ Dawn breaks… ${result.victimName} was found dead.`,
+      victim: { id: result.victim, name: result.victimName, role: result.victimRole }
     });
+    // Last words
+    if (room.settings.enableLastWords) {
+      io.to(result.victim).emit('last-words-prompt', {
+        timeLimit: room.settings.lastWordsTime
+      });
+      gm.setRoomTimer(room, 'lastWords', () => {
+        proceedAfterNight(io, room);
+      }, room.settings.lastWordsTime * 1000);
+      return;
+    }
   } else {
     io.to(room.code).emit('night-result', {
       saved: false,
@@ -162,28 +152,30 @@ function resolveNightPhase(io, room) {
     });
   }
 
-  // Check win condition after night
+  setTimeout(() => proceedAfterNight(io, room), 4000);
+}
+
+function proceedAfterNight(io, room) {
+  gm.clearRoomTimer(room, 'lastWords');
   const winner = gm.checkWinCondition(room);
   if (winner) {
     setTimeout(() => {
       io.to(room.code).emit('game-over', {
-        winner,
-        players: gm.getAllPlayers(room),
+        winner, players: gm.getAllPlayers(room),
         message: winner === 'Citizens'
           ? '🎉 The Citizens have rooted out all the Mafia! Town wins!'
-          : '💀 The Mafia has taken over the town! Mafia wins!'
+          : '💀 The Mafia has taken over the town! Mafia wins!',
+        gameLog: room.gameLog
       });
-    }, 3000);
+      io.to(room.code).emit('sound', { type: 'gameover' });
+    }, 1000);
   } else {
-    // Transition to day phase after a pause
     setTimeout(() => {
       const dayPhase = require('./day');
       dayPhase.startDay(io, room);
-    }, 4000);
+    }, 2000);
   }
 }
-
-/* ── helper text ─────────────────────────────────────────── */
 
 function getNightStepMessage(step) {
   switch (step) {
@@ -203,4 +195,4 @@ function getActionPrompt(step) {
   }
 }
 
-module.exports = { startNight, handleNightAction };
+module.exports = { startNight, handleNightAction, proceedAfterNight };

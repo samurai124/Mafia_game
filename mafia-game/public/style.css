@@ -343,3 +343,85 @@ h2 { font-size: 2.5rem; margin-bottom: 32px; text-align: center; color: var(--te
 .toast-container { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 1000; pointer-events: none; }
 .toast { padding: 16px 24px; border-radius: var(--radius-sm); font-size: 1.1rem; font-weight: 600; color: white; background: var(--text-primary); box-shadow: var(--shadow-md); opacity: 0; transform: translateY(-10px); transition: 0.3s; }
 .toast.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Timer Bar ── */
+.timer-bar-container { max-width: 500px; margin: 0 auto 24px; text-align: center; }
+.timer-bar-container .timer-label { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+.timer-bar-container .timer-label.urgent { color: var(--danger); animation: pulse 0.5s infinite alternate; }
+.timer-bar-bg { width: 100%; height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.timer-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 1s linear; }
+.timer-bar-fill.urgent { background: var(--danger); }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+/* ── Defense Phase ── */
+.defense-card { max-width: 500px; margin: 0 auto 32px; padding: 32px; background: var(--warning-bg); border: 3px solid rgba(255,193,7,0.4); border-radius: var(--radius); text-align: center; }
+.defense-card h3 { color: #b08200; font-size: 1.5rem; margin-bottom: 12px; }
+.defense-textarea { width: 100%; min-height: 100px; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font); font-size: 1rem; resize: vertical; outline: none; margin: 16px 0; }
+.defense-textarea:focus { border-color: var(--accent); }
+.defense-text-display { background: #fff; border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 20px; text-align: left; font-size: 1.1rem; font-style: italic; color: var(--text-primary); margin: 16px 0; line-height: 1.5; }
+
+/* ── Revote Buttons ── */
+.revote-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+.revote-btn { padding: 16px 40px; border-radius: var(--radius-sm); font-family: var(--font); font-size: 1.1rem; font-weight: 700; cursor: pointer; border: 3px solid; transition: 0.2s; }
+.revote-btn.yes { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+.revote-btn.yes:hover { background: var(--danger); color: white; }
+.revote-btn.no { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.revote-btn.no:hover { background: var(--success); color: white; }
+.revote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Last Words ── */
+.last-words-display { max-width: 500px; margin: 16px auto; padding: 20px; background: var(--surface); border-left: 4px solid var(--text-muted); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-style: italic; color: var(--text-secondary); }
+
+/* ── Game Log ── */
+.game-log-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; background: var(--text-primary); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; box-shadow: var(--shadow-md); transition: 0.2s; }
+.game-log-toggle:hover { transform: scale(1.1); }
+.game-log-panel { position: fixed; bottom: 80px; right: 20px; width: 340px; max-height: 400px; background: #fff; border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); z-index: 100; overflow: hidden; display: flex; flex-direction: column; }
+.game-log-panel .log-header { padding: 16px; font-weight: 800; border-bottom: 2px solid var(--border); font-size: 1rem; }
+.game-log-panel .log-entries { flex: 1; overflow-y: auto; padding: 12px; max-height: 340px; }
+.log-entry { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; font-weight: 500; }
+.log-entry.kill { background: var(--danger-bg); color: #842029; }
+.log-entry.save { background: var(--success-bg); color: var(--success); }
+.log-entry.vote_kill { background: var(--danger-bg); color: #842029; }
+.log-entry.spared { background: var(--success-bg); color: var(--success); }
+.log-entry.safe { background: var(--surface); color: var(--text-secondary); }
+.log-entry.start { background: #e7f1ff; color: #0c63e4; }
+.log-entry .log-time { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 6px; }
+
+/* ── Settings Panel ── */
+.settings-panel { max-width: 500px; margin: 0 auto 32px; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.settings-panel h3 { font-size: 1.1rem; margin-bottom: 16px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.setting-row:last-child { border-bottom: none; }
+.setting-row label { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+.setting-row input[type="number"] { width: 80px; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: 1rem; text-align: center; outline: none; }
+.setting-row input[type="number"]:focus { border-color: var(--accent); }
+.setting-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+
+/* ── Kick Button ── */
+.btn-kick { background: none; border: 2px solid var(--danger); color: var(--danger); padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase; margin-top: 4px; }
+.btn-kick:hover { background: var(--danger); color: white; }
+
+/* ── Mafia Chat ── */
+.mafia-chat-panel { background: rgba(220,53,69,0.05); border: 2px solid rgba(220,53,69,0.2); border-radius: var(--radius); padding: 16px; margin-top: 20px; max-height: 200px; overflow-y: auto; }
+.mafia-chat-panel .mafia-chat-title { font-size: 0.8rem; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.mafia-chat-msg { font-size: 0.9rem; padding: 4px 0; }
+.mafia-chat-form { display: flex; gap: 8px; margin-top: 8px; }
+.mafia-chat-form input { flex: 1; padding: 8px 12px; border: 2px solid rgba(220,53,69,0.2); border-radius: 8px; font-family: var(--font); font-size: 0.9rem; outline: none; }
+.mafia-chat-form input:focus { border-color: var(--danger); }
+.mafia-chat-form button { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-family: var(--font); font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+
+/* ── Win Stats ── */
+.win-stats { display: flex; gap: 16px; justify-content: center; margin: 16px 0; }
+.stat-box { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 12px 20px; text-align: center; }
+.stat-box .stat-num { font-size: 1.5rem; font-weight: 900; color: var(--text-primary); }
+.stat-box .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Phase Transition Overlay ── */
+.phase-overlay { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
+.phase-overlay.active { opacity: 1; }
+.phase-overlay.night-overlay { background: rgba(0,0,0,0.85); }
+.phase-overlay.day-overlay { background: rgba(255,200,50,0.3); }
+.phase-overlay .overlay-text { font-size: 3rem; font-weight: 900; color: white; text-align: center; animation: slideUp 0.5s ease-out; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+.btn-lg { font-size: 1.2rem; padding: 20px 28px; }
