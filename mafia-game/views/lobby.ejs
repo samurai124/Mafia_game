@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mafia Party Game</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="layout-wrapper">
+  <div class="app-container">
+
+  <!-- ── Landing ── -->
+  <section id="landing-screen" class="screen active">
+    <div class="logo-area">
+      <div class="logo-icon">🕵️‍♂️</div>
+      <h1 class="game-title">Mafia</h1>
+    </div>
+    
+    <div class="input-group">
+      <label>Your Name</label>
+      <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off">
+    </div>
+    <button id="btn-create" class="btn">Create New Room</button>
+    
+    <div class="divider">or join existing</div>
+    
+    <div class="input-group">
+      <label>Room Code</label>
+      <input type="text" id="room-code-input" placeholder="e.g. ABC123" maxlength="6" autocomplete="off" style="text-transform: uppercase;">
+    </div>
+    <button id="btn-join" class="btn btn-secondary">Join Game</button>
+    
+    <p id="error-msg" class="error-msg hidden"></p>
+  </section>
+
+  <!-- ── Waiting Room ── -->
+  <section id="waiting-screen" class="screen text-center">
+    <span class="phase-badge badge-blue">Lobby</span>
+    <h2>Waiting Room</h2>
+
+    <div class="room-code-box">
+      <div>
+        <span class="room-code-label">Room Code</span>
+        <span id="display-room-code" class="room-code-value">------</span>
+      </div>
+      <button id="btn-copy-code" class="btn-icon" title="Copy code">📋</button>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 24px; font-weight: 500;">
+      <strong id="player-count-num" style="color: var(--text-primary);">0</strong> players connected
+    </p>
+
+    <ul id="player-list" class="player-list"></ul>
+
+    <div id="host-controls" class="hidden">
+      <div class="debug-controls">
+        <span class="debug-label">🤖 Test Mode: Add Bots</span>
+        <div class="debug-row">
+          <button class="btn btn-secondary btn-bot" data-bot-count="3">+3 Bots</button>
+          <button class="btn btn-secondary btn-bot" data-bot-count="5">+5 Bots</button>
+          <button class="btn btn-secondary btn-bot" data-bot-count="7">+7 Bots</button>
+        </div>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; font-weight: 600;">Requires 4+ players to start</p>
+      <button id="btn-start" class="btn btn-lg" disabled>Start Game</button>
+    </div>
+    
+    <p id="waiting-note" style="color: var(--text-muted); font-size: 1.1rem; font-weight: 500;">Waiting for host to start the game...</p>
+  </section>
+
+  <!-- ── Role ── -->
+  <section id="role-screen" class="screen text-center">
+    <span class="phase-badge badge-purple">Role Reveal</span>
+    <h2>Your Identity</h2>
+
+    <div id="role-card-container" class="role-card-large">
+      <div id="role-emoji" class="role-emoji-large">❓</div>
+      <div id="role-name" class="role-name-large">Unknown</div>
+      <p id="role-desc" class="role-desc"></p>
+      
+      <div id="role-instruction-box" class="instruction-box">
+        <h4>Instructions</h4>
+        <p id="role-instruction-text"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Night ── -->
+  <section id="night-screen" class="screen text-center">
+    <span class="phase-badge badge-blue">Night <span id="night-round">1</span></span>
+    <h2 id="night-message">The village sleeps...</h2>
+
+    <div id="night-step-indicator" class="steps">
+      <div class="step-dot" data-step="mafia">Mafia</div>
+      <div class="step-dot" data-step="doctor">Doctor</div>
+      <div class="step-dot" data-step="cheikh">Cheikh</div>
+    </div>
+
+    <div id="night-waiting" style="padding: 60px 0;">
+      <div class="big-emoji">😴</div>
+      <p class="info-text">Close your eyes. Wait for your turn.</p>
+    </div>
+
+    <div id="night-action-panel" class="hidden">
+      <p id="action-prompt" class="info-text" style="color: var(--text-primary); font-size: 1.5rem;"></p>
+      <ul id="action-targets" class="target-list"></ul>
+    </div>
+
+    <div id="night-confirmed" class="hidden" style="padding: 60px 0;">
+      <div class="big-emoji">✅</div>
+      <p id="confirmed-message" style="color: var(--success); font-size: 1.5rem; font-weight: 700;"></p>
+    </div>
+
+    <div id="cheikh-result-panel" class="hidden" style="padding: 60px 0;">
+      <div class="big-emoji">👁️</div>
+      <h3 style="margin: 24px 0 16px; font-size: 2rem;">Investigation Result</h3>
+      <p id="cheikh-result-text" style="font-size: 1.5rem; font-weight: 800;"></p>
+    </div>
+  </section>
+
+  <!-- ── Night Result / Dawn ── -->
+  <section id="night-result-screen" class="screen text-center">
+    <span class="phase-badge badge-yellow">Dawn</span>
+    <h2>Morning Arrives</h2>
+
+    <div class="big-emoji">🌅</div>
+    <p id="night-result-message" class="info-text" style="font-size: 1.5rem;"></p>
+    
+    <div id="night-victim-info" class="result-card-large hidden">
+      <span class="victim-label">Eliminated in the night</span>
+      <div id="night-victim-name" class="victim-name"></div>
+      <div id="night-victim-role" class="role-pill"></div>
+    </div>
+  </section>
+
+  <!-- ── Day ── -->
+  <section id="day-screen" class="screen text-center">
+    <span class="phase-badge badge-yellow">Day <span id="day-round">1</span></span>
+    <h2>Discussion Time</h2>
+
+    <p class="info-text">Discuss among yourselves. Try to find the Mafia, but be careful who you trust.</p>
+    
+    <h4 style="color: var(--text-secondary); margin: 40px 0 20px; text-transform: uppercase; letter-spacing: 0.1em;">Alive Players</h4>
+    <ul id="day-alive-list" class="player-list"></ul>
+    
+    <div id="day-host-controls" class="hidden" style="margin-top: 40px;">
+      <button id="btn-move-to-vote" class="btn btn-danger" style="max-width: 300px;">Start Voting Process</button>
+    </div>
+    <p id="day-waiting-note" style="color: var(--text-muted); font-size: 1.1rem; font-weight: 500; margin-top: 40px;">Waiting for host to start voting...</p>
+  </section>
+
+  <!-- ── Vote ── -->
+  <section id="vote-screen" class="screen text-center">
+    <span class="phase-badge badge-red">Voting</span>
+    <h2>Cast Your Vote</h2>
+
+    <p id="vote-progress" style="font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 24px;">0 / 0 votes cast</p>
+    
+    <ul id="vote-targets" class="target-list"></ul>
+    
+    <div id="vote-submitted" class="hidden" style="padding: 40px 0;">
+      <div class="big-emoji">🗳️</div>
+      <p style="color: var(--success); font-size: 1.5rem; font-weight: 700;">Vote successfully cast.</p>
+    </div>
+  </section>
+
+  <!-- ── Vote Result ── -->
+  <section id="vote-result-screen" class="screen text-center">
+    <span class="phase-badge badge-red">Result</span>
+    <h2>Voting Finished</h2>
+
+    <p id="vote-result-message" class="info-text" style="font-size: 1.5rem;"></p>
+    
+    <div id="vote-tally" class="tally-container"></div>
+    
+    <div id="vote-victim-info" class="result-card-large hidden">
+      <span class="victim-label">Voted out by the village</span>
+      <div id="vote-victim-name" class="victim-name"></div>
+      <div id="vote-victim-role" class="role-pill"></div>
+    </div>
+  </section>
+
+  <!-- ── Game Over ── -->
+  <section id="gameover-screen" class="screen text-center">
+    <span id="gameover-badge" class="phase-badge">Game Over</span>
+    <h2 id="gameover-title">Game Finished</h2>
+
+    <div id="gameover-emoji" class="big-emoji" style="font-size: 100px;">🏆</div>
+    <p id="gameover-message" class="info-text" style="font-size: 1.5rem; color: var(--text-primary); font-weight: 700;"></p>
+    
+    <h4 style="color: var(--text-secondary); margin: 40px 0 20px; text-transform: uppercase; letter-spacing: 0.1em;">Final Roles Revealed</h4>
+    <ul id="gameover-players" class="player-list"></ul>
+    
+    <button id="btn-back-lobby" class="btn" style="margin-top: 40px; max-width: 300px;">Return to Lobby</button>
+  </section>
+
+  </div> <!-- End app-container -->
+
+  <!-- ── Chat Sidebar ── -->
+  <aside id="chat-sidebar" class="chat-sidebar hidden">
+    <div class="chat-header">
+      💬 Room Chat
+    </div>
+    <div id="chat-messages" class="chat-messages">
+      <div style="text-align:center; color:var(--text-muted); font-size:0.85rem; margin-top:20px;">Welcome to the chat!</div>
+    </div>
+    <form id="chat-form" class="chat-form">
+      <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+      <button type="submit" class="btn-send">Send</button>
+    </form>
+  </aside>
+
+</div> <!-- End layout-wrapper -->
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+// Simple, clear emojis for players
+const AVATARS = ['😎','🤠','🤓','😇','🤫','😈','👽','👻','🐱','🐶'];
+
+let mySocketId = null, isHost = false, myRole = null, myRoomCode = null, myAlive = true;
+socket.on('connect', () => { mySocketId = socket.id; });
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const screens = {
+  landing: $('#landing-screen'), waiting: $('#waiting-screen'),
+  role: $('#role-screen'), night: $('#night-screen'),
+  nightResult: $('#night-result-screen'), day: $('#day-screen'),
+  vote: $('#vote-screen'), voteResult: $('#vote-result-screen'),
+  gameover: $('#gameover-screen')
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  if (screens[name]) screens[name].classList.add('active');
+}
+
+function showToast(msg, type = 'info') {
+  const c = $('#toast-container');
+  const t = document.createElement('div');
+  t.className = `toast`;
+  if(type === 'error') Object.assign(t.style, {backgroundColor: 'var(--danger)', color: 'white'});
+  if(type === 'success') Object.assign(t.style, {backgroundColor: 'var(--success)', color: 'white'});
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.classList.add('visible'), 10);
+  setTimeout(() => { t.classList.remove('visible'); setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+/* ── Landing ── */
+$('#btn-create').addEventListener('click', () => {
+  const name = $('#player-name').value.trim();
+  if (!name) { showError('Please enter your name.'); return; }
+  socket.emit('create-room', { playerName: name });
+});
+
+$('#btn-join').addEventListener('click', () => {
+  const name = $('#player-name').value.trim();
+  const code = $('#room-code-input').value.trim().toUpperCase();
+  if (!name) { showError('Please enter your name.'); return; }
+  if (!code) { showError('Please enter a room code.'); return; }
+  socket.emit('join-room', { roomCode: code, playerName: name });
+});
+
+$('#player-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const c = $('#room-code-input').value.trim(); c ? $('#btn-join').click() : $('#btn-create').click(); }
+});
+$('#room-code-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-join').click(); });
+
+function showError(msg) {
+  const el = $('#error-msg'); el.textContent = msg; el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+/* ── Lobby Events ── */
+socket.on('room-created', ({ roomCode, players }) => { isHost = true; myRoomCode = roomCode; enterWaiting(roomCode, players); });
+socket.on('room-joined', ({ roomCode, isHost: h, players }) => { isHost = h; myRoomCode = roomCode; enterWaiting(roomCode, players); });
+socket.on('join-error', ({ message }) => showError(message));
+socket.on('start-error', ({ message }) => showToast(message, 'error'));
+
+function enterWaiting(code, players) {
+  showScreen('waiting');
+  $('#display-room-code').textContent = code;
+  updatePlayerList(players);
+  if (isHost) { $('#host-controls').classList.remove('hidden'); $('#waiting-note').classList.add('hidden'); }
+  else { $('#host-controls').classList.add('hidden'); $('#waiting-note').classList.remove('hidden'); }
+  $('#chat-sidebar').classList.remove('hidden');
+}
+
+$('#btn-copy-code').addEventListener('click', () => {
+  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Code copied!', 'success'));
+});
+
+socket.on('player-list-update', ({ players, hostId }) => {
+  updatePlayerList(players);
+  if (hostId === mySocketId && !isHost) {
+    isHost = true; showToast('You are now the host!', 'success');
+    if (screens.waiting.classList.contains('active')) { $('#host-controls').classList.remove('hidden'); $('#waiting-note').classList.add('hidden'); }
+    if (screens.day.classList.contains('active')) { $('#day-host-controls').classList.remove('hidden'); $('#day-waiting-note').classList.add('hidden'); }
+  }
+});
+
+function updatePlayerList(players) {
+  const list = $('#player-list'); list.innerHTML = '';
+  players.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = 'player-card';
+    const isMe = p.id === mySocketId;
+    const isBot = p.id && p.id.startsWith('bot-');
+    const avatar = isBot ? '🤖' : AVATARS[i % AVATARS.length];
+    
+    let tags = '';
+    if(isMe) tags += '<span class="tag tag-you">YOU</span>';
+    if(isBot) tags += '<span class="tag tag-bot">BOT</span>';
+    
+    li.innerHTML = `
+      <div class="player-avatar">${avatar}</div>
+      <div class="player-name">${p.name}</div>
+      ${tags ? `<div>${tags}</div>` : ''}
+    `;
+    list.appendChild(li);
+  });
+  $('#player-count-num').textContent = players.length;
+  
+  const btn = $('#btn-start');
+  if (btn) {
+    btn.disabled = players.length < 4;
+    btn.textContent = players.length < 4 ? `Need ${4 - players.length} more players` : 'Start Game';
+  }
+}
+
+$('#btn-start').addEventListener('click', () => socket.emit('start-game'));
+
+document.querySelectorAll('.btn-bot').forEach(btn => {
+  btn.addEventListener('click', () => socket.emit('add-bots', { count: parseInt(btn.dataset.botCount) }));
+});
+
+socket.on('player-disconnected', ({ name }) => showToast(`${name} disconnected.`));
+
+/* ── Roles ── */
+socket.on('role-assigned', ({ role, emoji, description, instruction, team }) => {
+  myRole = role;
+  showScreen('role');
+  
+  $('#role-card-container').className = `role-card-large ${team === 'mafia' ? 'mafia' : 'citizen'}`;
+  $('#role-emoji').textContent = emoji;
+  $('#role-name').textContent = role;
+  $('#role-name').className = `role-name-large ${team === 'mafia' ? 'role-mafia' : 'role-citizen'}`;
+  $('#role-desc').textContent = description;
+  
+  $('#role-instruction-box').className = `instruction-box ${team === 'mafia' ? 'mafia' : 'citizen'}`;
+  $('#role-instruction-text').textContent = instruction;
+});
+
+/* ── Night ── */
+socket.on('phase-change', ({ phase, round, message, alivePlayers }) => {
+  if (phase === 'night') {
+    showScreen('night');
+    $('#night-round').textContent = round;
+    $('#night-message').textContent = message;
+    $('#night-action-panel').classList.add('hidden');
+    $('#night-confirmed').classList.add('hidden');
+    $('#cheikh-result-panel').classList.add('hidden');
+    $('#night-waiting').classList.remove('hidden');
+    $$('.step-dot').forEach(s => s.classList.remove('active', 'done'));
+  } else if (phase === 'day') {
+    showScreen('day');
+    $('#day-round').textContent = round;
+    renderAliveList('#day-alive-list', alivePlayers);
+    if (isHost) { $('#day-host-controls').classList.remove('hidden'); $('#day-waiting-note').classList.add('hidden'); }
+    else { $('#day-host-controls').classList.add('hidden'); $('#day-waiting-note').classList.remove('hidden'); }
+  } else if (phase === 'vote') {
+    showScreen('vote');
+    renderVoteTargets(alivePlayers);
+    $('#vote-submitted').classList.add('hidden');
+    $('#vote-progress').textContent = `0 / ${alivePlayers.length} votes cast`;
+  }
+});
+
+socket.on('night-step', ({ step, message }) => {
+  $('#night-message').textContent = message;
+  const steps = ['mafia', 'doctor', 'cheikh'];
+  steps.forEach(s => {
+    const el = $(`.step-dot[data-step="${s}"]`); if (!el) return;
+    el.classList.remove('active', 'done');
+    const si = steps.indexOf(s), ci = steps.indexOf(step);
+    if (si < ci) el.classList.add('done');
+    if (si === ci) el.classList.add('active');
+  });
+});
+
+socket.on('night-action-prompt', ({ step, role, targets, message }) => {
+  $('#night-waiting').classList.add('hidden');
+  $('#night-confirmed').classList.add('hidden');
+  $('#cheikh-result-panel').classList.add('hidden');
+  $('#night-action-panel').classList.remove('hidden');
+  $('#action-prompt').textContent = message;
+  
+  const list = $('#action-targets'); list.innerHTML = '';
+  targets.forEach(t => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <button class="target-btn" data-target-id="${t.id}">
+        <div class="target-avatar-small">${AVATARS[Math.floor(Math.random()*AVATARS.length)]}</div>
+        <span>${t.name}</span>
+      </button>`;
+    
+    const btn = li.querySelector('button');
+    btn.addEventListener('click', () => {
+      socket.emit('night-action', { targetId: t.id });
+      $$('#action-targets .target-btn').forEach(b => b.disabled = true);
+      btn.classList.add(role === 'Mafia' ? 'selected-danger' : 'selected');
+    });
+    list.appendChild(li);
+  });
+});
+
+socket.on('night-action-confirmed', ({ message }) => {
+  $('#night-action-panel').classList.add('hidden');
+  $('#night-confirmed').classList.remove('hidden');
+  $('#confirmed-message').textContent = message;
+});
+
+socket.on('cheikh-result', ({ targetName, result, message }) => {
+  $('#night-action-panel').classList.add('hidden');
+  $('#cheikh-result-panel').classList.remove('hidden');
+  const el = $('#cheikh-result-text');
+  el.textContent = message;
+  el.style.color = result === 'Mafia' ? 'var(--danger)' : 'var(--success)';
+});
+
+socket.on('night-result', ({ saved, message, victim }) => {
+  showScreen('nightResult');
+  $('#night-result-message').textContent = message;
+  if (victim) {
+    $('#night-victim-info').classList.remove('hidden');
+    $('#night-victim-name').textContent = victim.name;
+    $('#night-victim-role').textContent = victim.role;
+    if (victim.id === mySocketId) { myAlive = false; showToast('You were eliminated!', 'error'); }
+  } else { $('#night-victim-info').classList.add('hidden'); }
+});
+
+/* ── Day / Vote ── */
+function renderAliveList(sel, players) {
+  const list = $(sel); list.innerHTML = '';
+  players.forEach((p, i) => {
+    const li = document.createElement('li'); li.className = 'player-card';
+    const isMe = p.id === mySocketId;
+    li.innerHTML = `
+      <div class="player-avatar">${AVATARS[i % AVATARS.length]}</div>
+      <div class="player-name">${p.name}</div>
+      ${isMe ? '<div><span class="tag tag-you">YOU</span></div>' : ''}
+    `;
+    list.appendChild(li);
+  });
+}
+
+$('#btn-move-to-vote').addEventListener('click', () => socket.emit('move-to-vote'));
+
+function renderVoteTargets(players) {
+  const list = $('#vote-targets'); list.innerHTML = '';
+  if (!myAlive) {
+    list.innerHTML = '<li><p class="info-text">You are eliminated and cannot vote.</p></li>';
+    return;
+  }
+  players.forEach((p, i) => {
+    if (p.id === mySocketId) return;
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <button class="target-btn" data-target-id="${p.id}">
+        <div class="target-avatar-small">${AVATARS[i % AVATARS.length]}</div>
+        <span>${p.name}</span>
+      </button>`;
+    const btn = li.querySelector('button');
+    btn.addEventListener('click', () => {
+      socket.emit('cast-vote', { targetId: p.id });
+      $$('#vote-targets .target-btn').forEach(b => b.disabled = true);
+      btn.classList.add('selected-danger');
+      $('#vote-submitted').classList.remove('hidden');
+    });
+    list.appendChild(li);
+  });
+}
+
+socket.on('vote-progress', ({ message }) => { $('#vote-progress').textContent = message; });
+
+socket.on('vote-result', ({ eliminated, tally, tie, message }) => {
+  showScreen('voteResult');
+  $('#vote-result-message').textContent = message;
+  
+  const tallyDiv = $('#vote-tally'); tallyDiv.innerHTML = '';
+  for (const [name, count] of Object.entries(tally).sort((a, b) => b[1] - a[1])) {
+    const row = document.createElement('div'); row.className = 'tally-row';
+    row.innerHTML = `
+      <div class="tally-name">${name}</div>
+      <div class="tally-bar-wrap"><div class="tally-bar" style="width:${Math.min(count*30, 100)}%"></div></div>
+      <div class="tally-count">${count}</div>
+    `;
+    tallyDiv.appendChild(row);
+  }
+  
+  if (eliminated) {
+    $('#vote-victim-info').classList.remove('hidden');
+    $('#vote-victim-name').textContent = eliminated.name;
+    $('#vote-victim-role').textContent = eliminated.role;
+    if (eliminated.id === mySocketId) { myAlive = false; showToast('You were voted out!', 'error'); }
+  } else { $('#vote-victim-info').classList.add('hidden'); }
+});
+
+/* ── Game Over ── */
+socket.on('game-over', ({ winner, players, message }) => {
+  showScreen('gameover');
+  $('#gameover-title').textContent = winner === 'Citizens' ? 'Citizens Win!' : 'Mafia Wins!';
+  $('#gameover-emoji').textContent = winner === 'Citizens' ? '🎉' : '🔪';
+  $('#gameover-message').textContent = message;
+  
+  $('#gameover-badge').className = `phase-badge`;
+  $('#gameover-badge').style.backgroundColor = winner === 'Citizens' ? 'var(--success-bg)' : 'var(--danger-bg)';
+  $('#gameover-badge').style.color = winner === 'Citizens' ? 'var(--success)' : 'var(--danger)';
+  
+  const list = $('#gameover-players'); list.innerHTML = '';
+  players.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = `player-card ${!p.alive ? 'eliminated' : ''}`;
+    li.innerHTML = `
+      <div class="player-avatar">${AVATARS[i % AVATARS.length]}</div>
+      <div class="player-name">${p.name}</div>
+      <div>
+        <span class="tag" style="background:${getRoleColor(p.role, 0.1)}; color:${getRoleColor(p.role, 1)}">${p.role}</span>
+        ${!p.alive ? '<span class="tag" style="background: var(--border); color: var(--text-secondary); margin-left: 4px;">DEAD</span>' : ''}
+      </div>
+    `;
+    list.appendChild(li);
+  });
+});
+
+$('#btn-back-lobby').addEventListener('click', () => socket.emit('return-to-lobby'));
+socket.on('returned-to-lobby', () => {
+  isHost = false; myRole = null; myRoomCode = null; myAlive = true;
+  $('#chat-sidebar').classList.add('hidden');
+  $('#chat-messages').innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; margin-top:20px;">Welcome to the chat!</div>';
+  showScreen('landing');
+});
+
+function getRoleColor(role, opacity) {
+  const rgb = { Mafia: '220, 53, 69', Doctor: '25, 135, 84', Cheikh: '126, 34, 206', Citizen: '13, 110, 253' }[role] || '108, 117, 125';
+  return `rgba(${rgb}, ${opacity})`;
+}
+
+/* ── Chat ── */
+$('#chat-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = $('#chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  socket.emit('send-chat-message', { message: msg });
+  input.value = '';
+});
+
+socket.on('chat-message', ({ senderId, senderName, message, isAlive }) => {
+  const isMe = senderId === mySocketId;
+  const list = $('#chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${isMe ? 'my-msg' : ''}`;
+  
+  const status = isAlive ? '' : ' <span style="opacity:0.6; font-size:0.7rem;">(DEAD)</span>';
+  div.innerHTML = `
+    <div class="chat-sender">${senderName}${status}</div>
+    <div class="chat-text">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+  `;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+});
+
+</script>
+</body>
+</html>
