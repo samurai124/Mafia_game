@@ -58,14 +58,6 @@
     <ul id="player-list" class="player-list"></ul>
 
     <div id="host-controls" class="hidden">
-      <div class="debug-controls">
-        <span class="debug-label">🤖 Test Mode: Add Bots</span>
-        <div class="debug-row">
-          <button class="btn btn-secondary btn-bot" data-bot-count="3">+3 Bots</button>
-          <button class="btn btn-secondary btn-bot" data-bot-count="5">+5 Bots</button>
-          <button class="btn btn-secondary btn-bot" data-bot-count="7">+7 Bots</button>
-        </div>
-      </div>
       <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; font-weight: 600;">Requires 4+ players to start</p>
       <button id="btn-start" class="btn btn-lg" disabled>Start Game</button>
     </div>
@@ -316,12 +308,10 @@ function updatePlayerList(players) {
     const li = document.createElement('li');
     li.className = 'player-card';
     const isMe = p.id === mySocketId;
-    const isBot = p.id && p.id.startsWith('bot-');
-    const avatar = isBot ? '🤖' : AVATARS[i % AVATARS.length];
+    const avatar = AVATARS[i % AVATARS.length];
     
     let tags = '';
     if(isMe) tags += '<span class="tag tag-you">YOU</span>';
-    if(isBot) tags += '<span class="tag tag-bot">BOT</span>';
     
     li.innerHTML = `
       <div class="player-avatar">${avatar}</div>
@@ -340,10 +330,6 @@ function updatePlayerList(players) {
 }
 
 $('#btn-start').addEventListener('click', () => socket.emit('start-game'));
-
-document.querySelectorAll('.btn-bot').forEach(btn => {
-  btn.addEventListener('click', () => socket.emit('add-bots', { count: parseInt(btn.dataset.botCount) }));
-});
 
 socket.on('player-disconnected', ({ name }) => showToast(`${name} disconnected.`));
 

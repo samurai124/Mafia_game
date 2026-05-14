@@ -87,32 +87,6 @@ io.on('connection', (socket) => {
     io.to(code).emit('player-list-update', { players, hostId: room.hostId });
   });
 
-  /* ─── DEBUG: Add Bot Players (for solo testing) ─── */
-  socket.on('add-bots', ({ count }) => {
-    const room = gm.getRoomBySocket(socket.id);
-    if (!room || socket.id !== room.hostId || room.phase !== 'lobby') return;
-
-    const botNames = ['Alice', 'Bob', 'Carlos', 'Diana', 'Eve', 'Frank', 'Grace', 'Hank', 'Ivy', 'Jack'];
-    const existingNames = [...room.players.values()].map(p => p.name.toLowerCase());
-    let added = 0;
-
-    for (const name of botNames) {
-      if (added >= count) break;
-      if (existingNames.includes(name.toLowerCase())) continue;
-      const botId = `bot-${name.toLowerCase()}-${Date.now()}`;
-      room.players.set(botId, { name, role: null, alive: true, voted: false });
-      added++;
-    }
-
-    console.log(`[DEBUG] Added ${added} bots to room ${room.code}`);
-
-    const players = [];
-    for (const [id, p] of room.players) {
-      players.push({ id, name: p.name });
-    }
-    io.to(room.code).emit('player-list-update', { players, hostId: room.hostId });
-  });
-
   /* ─── CHAT ─── */
   socket.on('send-chat-message', (data) => {
     const room = gm.getRoomBySocket(socket.id);

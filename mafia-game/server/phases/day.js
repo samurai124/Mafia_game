@@ -40,21 +40,6 @@ function startVote(io, room) {
     message: '🗳️ Time to vote! Choose the player you want to eliminate.',
     alivePlayers: alivePlayers.map(p => ({ id: p.id, name: p.name }))
   });
-
-  // Auto-vote for bots after a short delay
-  let botDelay = 1000;
-  for (const p of alivePlayers) {
-    if (p.id.startsWith('bot-')) {
-      const otherAlive = alivePlayers.filter(o => o.id !== p.id);
-      if (otherAlive.length > 0) {
-        const target = otherAlive[Math.floor(Math.random() * otherAlive.length)];
-        setTimeout(() => {
-          if (room.phase === 'vote') handleVote(io, room, p.id, target.id);
-        }, botDelay);
-        botDelay += 500;
-      }
-    }
-  }
 }
 
 /**

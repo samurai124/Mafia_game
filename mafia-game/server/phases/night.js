@@ -71,13 +71,6 @@ function wakeUpRole(io, room, step) {
     handleNightAction(io, room, step, null);
     return;
   }
-
-  // Auto-act for bots: if ALL players of this role are bots, pick random target
-  const allBots = rolePlayers.every(rp => rp.id.startsWith('bot-'));
-  if (allBots && targets.length > 0) {
-    const randomTarget = targets[Math.floor(Math.random() * targets.length)];
-    setTimeout(() => handleNightAction(io, room, step, randomTarget.id), 1500);
-  }
 }
 
 /**

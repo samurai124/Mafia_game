@@ -161,7 +161,6 @@ h2 { font-size: 2.5rem; margin-bottom: 32px; text-align: center; color: var(--te
 .player-name { font-weight: 700; font-size: 1.1rem; word-break: break-word; }
 .tag { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 .tag-you { background: #e7f1ff; color: #0c63e4; margin-top: 4px; }
-.tag-bot { background: var(--surface-hover); color: var(--text-secondary); margin-top: 4px; }
 
 /* ── Role Card (Big) ── */
 .role-card-large {
@@ -207,12 +206,6 @@ h2 { font-size: 2.5rem; margin-bottom: 32px; text-align: center; color: var(--te
 .target-btn.selected-danger { border-color: var(--danger); background: var(--danger-bg); box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2); }
 .target-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .target-avatar-small { font-size: 2rem; line-height: 1; }
-
-/* ── Debug ── */
-.debug-controls { max-width: 400px; margin: 0 auto 32px; padding: 24px; background: var(--surface); border: 2px dashed var(--border-strong); border-radius: var(--radius-sm); text-align: center; }
-.debug-label { font-size: 0.9rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 16px; }
-.debug-row { display: flex; gap: 12px; }
-.debug-row .btn { flex: 1; padding: 12px; font-size: 1rem; margin: 0; }
 
 /* ── Steps ── */
 .steps { display: flex; justify-content: center; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
